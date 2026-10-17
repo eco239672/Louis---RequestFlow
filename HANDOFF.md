@@ -12,8 +12,11 @@
 - Aktuálny APK je nainštalovaný na oboch emulátoroch. V rozhraní sú viditeľné stavy a tlačidlá **Potvrdiť/Odmietnuť**; potvrdenie cez rozhranie vedúceho zmenilo stav v cloude na `approved` a druhý telefón ho načítal.
 - Každý používateľ si v nastavení zadá meno a pracovnú pozíciu. Ak pozícia obsahuje slovo **vedúci** (aj bez diakritiky), zobrazia sa mu tlačidlá **Potvrdiť/Odmietnuť**; ostatným používateľom nie.
 - Po otvorení oddelenia aplikácia automaticky synchronizuje údaje každých 15 sekúnd. Obnova sa zastaví po odchode z oddelenia a bez internetu bezpečne ponechá lokálne dáta.
+- V cloude je pripravené administračné rozhranie `/admin` s tabuľkou `app_users`. Administrátor môže založiť používateľa, určiť mu rolu, oddelenie a deaktivovať účet. Samostatný administrátorský kľúč je v databáze uložený iba ako hash.
 
 ## Ďalšie pokračovanie
 
 1. Pred produkčným použitím doplniť individuálne prihlásenie a roly zamestnanec/vedúci. Súčasné rozpoznanie slova **vedúci** je iba lokálne pravidlo rozhrania a nie je ním bezpečne vynútené oprávnenie na serveri.
-2. Upraviť obrazovku zoznamu pre malé telefóny, aby mali prijaté požiadavky a rozhodovacie tlačidlá viac priestoru na zobrazenie.
+2. Prepojiť mobilnú aplikáciu s účtami z `app_users`, aby server povolil rozhodnutie iba aktívnemu vedúcemu zodpovedajúceho oddelenia.
+3. Pridať registráciu zariadenia a push notifikácie: vedúcemu pri novej požiadavke a odosielateľovi po schválení alebo odmietnutí.
+4. Upraviť obrazovku zoznamu pre malé telefóny, aby mali prijaté požiadavky a rozhodovacie tlačidlá viac priestoru na zobrazenie.

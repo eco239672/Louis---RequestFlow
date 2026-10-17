@@ -1,7 +1,8 @@
-import { timingSafeEqual } from "node:crypto";
-import { Pool } from "pg";
+import { createHash, timingSafeEqual } from "node:crypto";
+import { neon } from "@neondatabase/serverless";
+import { adminPage } from "./admin-page.js";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 5 });
+const sql = neon(process.env.DATABASE_URL!);
 
 const syncKey = process.env.LOIUS_SYNC_KEY;
 
@@ -17,6 +18,17 @@ type RequestPayload = {
   originDeviceId: string;
 };
 
+type UserRole = "employee" | "manager" | "administrator";
+
+type AppUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  department: string | null;
+  isActive: boolean;
+};
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -25,10 +37,24 @@ function json(body: unknown, status = 200): Response {
 }
 
 function authorized(request: Request): boolean {
-  const received = request.headers.get("x-loius-sync-key");
-  if (!syncKey || !received) return false;
+  return matchesKey(request.headers.get("x-loius-sync-key"), syncKey);
+}
 
-  const expectedBuffer = Buffer.from(syncKey);
+async function adminAuthorized(request: Request): Promise<boolean> {
+  const received = request.headers.get("x-loius-admin-key");
+  if (!received) return false;
+
+  const rows = await sql.query("SELECT key_hash FROM admin_access WHERE id = true");
+  const keyHash = rows[0]?.key_hash;
+  if (typeof keyHash !== "string") return false;
+
+  const receivedHash = createHash("sha256").update(received).digest("hex");
+  return matchesKey(receivedHash, keyHash);
+}
+
+function matchesKey(received: string | null, expected: string | undefined): boolean {
+  if (!expected || !received) return false;
+  const expectedBuffer = Buffer.from(expected);
   const receivedBuffer = Buffer.from(received);
   return expectedBuffer.length === receivedBuffer.length && timingSafeEqual(expectedBuffer, receivedBuffer);
 }
@@ -39,6 +65,29 @@ function validText(value: unknown, maximum: number): value is string {
 
 function validStatus(value: unknown): value is string {
   return ["new", "approved", "rejected", "in_progress", "waiting", "resolved", "completed", "cancelled"].includes(String(value));
+}
+
+function validEmail(value: unknown): value is string {
+  return typeof value === "string" && value.length <= 320 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function validRole(value: unknown): value is UserRole {
+  return value === "employee" || value === "manager" || value === "administrator";
+}
+
+function validDepartment(value: unknown): value is string | null {
+  return value === null || value === undefined || (typeof value === "string" && value.trim().length <= 100);
+}
+
+function toAppUser(row: Record<string, unknown>): AppUser {
+  return {
+    id: String(row.id),
+    name: String(row.full_name),
+    email: String(row.email),
+    role: String(row.role) as UserRole,
+    department: row.department ? String(row.department) : null,
+    isActive: Boolean(row.is_active),
+  };
 }
 
 function validRequest(payload: unknown): payload is RequestPayload {
@@ -80,13 +129,87 @@ export default {
     if (request.method === "GET" && url.pathname === "/health") {
       return json({ status: "ok", version: "approval-workflow-v1" });
     }
+
+    if (request.method === "GET" && url.pathname === "/admin") {
+      return new Response(adminPage, {
+        headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+      });
+    }
+
+    if (url.pathname.startsWith("/admin-api/")) {
+      if (!await adminAuthorized(request)) return json({ error: "Neplatný administrátorský kľúč." }, 401);
+
+      if (request.method === "GET" && url.pathname === "/admin-api/users") {
+        const rows = await sql.query(
+          `SELECT id, full_name, email, role, department, is_active
+             FROM app_users
+            ORDER BY full_name ASC, email ASC`,
+        );
+        return json(rows.map((row) => toAppUser(row as Record<string, unknown>)));
+      }
+
+      if (request.method === "POST" && url.pathname === "/admin-api/users") {
+        let payload: Record<string, unknown>;
+        try {
+          payload = await request.json() as Record<string, unknown>;
+        } catch {
+          return json({ error: "Neplatné údaje používateľa." }, 400);
+        }
+        if (!validText(payload.name, 200) || !validEmail(payload.email) || !validRole(payload.role) || !validDepartment(payload.department)) {
+          return json({ error: "Skontrolujte meno, e-mail, rolu a oddelenie." }, 400);
+        }
+        const rows = await sql.query(
+          `INSERT INTO app_users (full_name, email, role, department)
+           VALUES ($1, lower($2), $3, $4)
+           RETURNING id, full_name, email, role, department, is_active`,
+          [payload.name.trim(), payload.email.trim(), payload.role, typeof payload.department === "string" && payload.department.trim() ? payload.department.trim() : null],
+        );
+        return json(toAppUser(rows[0] as Record<string, unknown>), 201);
+      }
+
+      const userMatch = url.pathname.match(/^\/admin-api\/users\/([0-9a-f-]{36})$/i);
+      if (request.method === "PATCH" && userMatch) {
+        let payload: Record<string, unknown>;
+        try {
+          payload = await request.json() as Record<string, unknown>;
+        } catch {
+          return json({ error: "Neplatné údaje používateľa." }, 400);
+        }
+        if ((payload.role !== undefined && !validRole(payload.role)) ||
+            (payload.department !== undefined && !validDepartment(payload.department)) ||
+            (payload.isActive !== undefined && typeof payload.isActive !== "boolean")) {
+          return json({ error: "Skontrolujte rolu, oddelenie a stav účtu." }, 400);
+        }
+        const rows = await sql.query(
+          `UPDATE app_users
+              SET role = COALESCE($2, role),
+                  department = CASE WHEN $3 THEN $4 ELSE department END,
+                  is_active = COALESCE($5, is_active),
+                  updated_at_utc = now()
+            WHERE id = $1::uuid
+            RETURNING id, full_name, email, role, department, is_active`,
+          [
+            userMatch[1],
+            payload.role ?? null,
+            Object.prototype.hasOwnProperty.call(payload, "department"),
+            typeof payload.department === "string" && payload.department.trim() ? payload.department.trim() : null,
+            payload.isActive ?? null,
+          ],
+        );
+        if (rows.length === 0) return json({ error: "Používateľ nebol nájdený." }, 404);
+        return json(toAppUser(rows[0] as Record<string, unknown>));
+      }
+
+      return json({ error: "Nenájdené." }, 404);
+    }
+
     if (!authorized(request)) return json({ error: "Unauthorized" }, 401);
 
     if (request.method === "GET" && url.pathname === "/requests") {
       const department = url.searchParams.get("department");
       if (!validText(department, 100)) return json({ error: "Department is required." }, 400);
 
-      const { rows } = await pool.query(
+      const rows = await sql.query(
         `SELECT id, local_reference, title, description, department, priority, status, created_at_utc, origin_device_id
            FROM work_requests
           WHERE department = $1
@@ -105,7 +228,7 @@ export default {
       }
       if (!validRequest(payload)) return json({ error: "Invalid request payload." }, 400);
 
-      const { rows } = await pool.query(
+      const rows = await sql.query(
         `INSERT INTO work_requests
           (id, local_reference, title, description, department, priority, status, created_at_utc, origin_device_id)
          VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8::timestamptz, $9)
@@ -125,12 +248,12 @@ export default {
       );
 
       if (rows.length > 0) return json(toResponse(rows[0]), 201);
-      const existing = await pool.query(
+      const existing = await sql.query(
         `SELECT id, local_reference, title, description, department, priority, status, created_at_utc, origin_device_id
            FROM work_requests WHERE id = $1::uuid`,
         [payload.id],
       );
-      return json(toResponse(existing.rows[0] as Record<string, unknown>));
+      return json(toResponse(existing[0] as Record<string, unknown>));
     }
 
     const statusMatch = url.pathname.match(/^\/requests\/([0-9a-f-]{36})\/status$/i);
@@ -147,7 +270,7 @@ export default {
         return json({ error: "Only approval or rejection is allowed for a new request." }, 400);
       }
 
-      const { rows } = await pool.query(
+      const rows = await sql.query(
         `UPDATE work_requests
             SET status = $2, updated_at_utc = now()
           WHERE id = $1::uuid AND status = 'new'
@@ -156,12 +279,12 @@ export default {
       );
 
       if (rows.length > 0) return json(toResponse(rows[0]));
-      const existing = await pool.query(
+      const existing = await sql.query(
         `SELECT id, local_reference, title, description, department, priority, status, created_at_utc, origin_device_id
            FROM work_requests WHERE id = $1::uuid`,
         [statusMatch[1]],
       );
-      if (existing.rows.length === 0) return json({ error: "Request not found." }, 404);
+      if (existing.length === 0) return json({ error: "Request not found." }, 404);
       return json({ error: "Request was already decided." }, 409);
     }
 
