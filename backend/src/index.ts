@@ -177,7 +177,7 @@ export default {
         const rows = await sql.query(
           `SELECT id, full_name, role, department, phone_number, is_active, device_id
              FROM app_users
-            ORDER BY full_name ASC, phone_number ASC`,
+            ORDER BY created_at_utc ASC, phone_number ASC`,
         );
         return json(rows.map((row) => toAppUser(row as Record<string, unknown>)));
       }

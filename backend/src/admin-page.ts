@@ -15,6 +15,9 @@ export const adminPage = String.raw`<!doctype html>
     main { padding: 22px 18px 48px; }
     .card { background: white; border: 1px solid #dbe3ea; border-radius: 14px; box-shadow: 0 2px 10px #173a5e12; padding: 20px; margin-bottom: 18px; }
     .hidden { display: none !important; }
+    #dashboard { display: flex; flex-direction: column; }
+    #usersCard { order: 1; }
+    #createCard { order: 2; }
     h2 { margin: 0 0 14px; font-size: 21px; }
     .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
     label { display: grid; gap: 6px; font-weight: 600; font-size: 14px; }
@@ -60,7 +63,7 @@ export const adminPage = String.raw`<!doctype html>
           <p id="formMessage" class="message"></p>
         </form>
       </section>
-      <section class="card">
+      <section id="usersCard" class="card">
         <div class="actions" style="margin-top:0; justify-content:space-between"><h2 style="margin:0">Používatelia</h2><button type="button" id="addEmployee">Pridať zamestnanca</button></div>
         <p id="listMessage" class="message"></p>
         <div id="users"></div>
@@ -88,7 +91,7 @@ export const adminPage = String.raw`<!doctype html>
       const users = await api("/admin-api/users");
       const container = byId("users");
       if (!users.length) { container.innerHTML = "<p>Zatiaľ nie sú vytvorení žiadni používatelia.</p>"; return; }
-      container.innerHTML = users.map((user) => '<div class="user" data-id="' + user.id + '"><div><strong>' + escapeHtml(user.name) + '</strong><span class="badge ' + (user.isActive ? '' : 'inactive') + '">' + (user.isActive ? 'Aktívny účet' : 'Deaktivovaný účet') + '</span><span class="badge ' + (user.deviceLinked ? '' : 'inactive') + '">' + (user.deviceLinked ? 'Telefón pripojený' : 'Telefón nepripojený') + '</span></div><label>Rola<select class="user-role">' + roleOptions(user.role) + '</select></label><label>Oddelenie<select class="user-department">' + departmentOptions(user.department || "") + '</select></label><label>Telefónne číslo<input class="user-phone-number" inputmode="tel" maxlength="30" value="' + escapeHtml(user.phoneNumber) + '"></label><button class="save-user">Uložiť</button><button class="toggle-user secondary">' + (user.isActive ? 'Deaktivovať' : 'Aktivovať') + '</button>' + (user.deviceLinked ? '<button class="unpair-user secondary">Odpojiť telefón</button>' : '') + '</div>').join("");
+      container.innerHTML = users.map((user, index) => '<div class="user" data-id="' + user.id + '"><div><strong>' + (index + 1) + '. ' + escapeHtml(user.name) + '</strong><span class="badge ' + (user.isActive ? '' : 'inactive') + '">' + (user.isActive ? 'Aktívny účet' : 'Deaktivovaný účet') + '</span><span class="badge ' + (user.deviceLinked ? '' : 'inactive') + '">' + (user.deviceLinked ? 'Telefón pripojený' : 'Telefón nepripojený') + '</span></div><label>Rola<select class="user-role">' + roleOptions(user.role) + '</select></label><label>Oddelenie<select class="user-department">' + departmentOptions(user.department || "") + '</select></label><label>Telefónne číslo<input class="user-phone-number" inputmode="tel" maxlength="30" value="' + escapeHtml(user.phoneNumber) + '"></label><button class="save-user">Uložiť</button><button class="toggle-user secondary">' + (user.isActive ? 'Deaktivovať' : 'Aktivovať') + '</button>' + (user.deviceLinked ? '<button class="unpair-user secondary">Odpojiť telefón</button>' : '') + '</div>').join("");
       container.querySelectorAll(".save-user").forEach((button) => button.addEventListener("click", () => saveUser(button.closest(".user"))));
       container.querySelectorAll(".toggle-user").forEach((button) => button.addEventListener("click", () => toggleUser(button.closest(".user"), button.textContent === "Aktivovať")));
       container.querySelectorAll(".unpair-user").forEach((button) => button.addEventListener("click", () => unpairDevice(button.closest(".user"))));
