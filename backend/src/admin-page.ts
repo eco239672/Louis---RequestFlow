@@ -18,6 +18,8 @@ export const adminPage = String.raw`<!doctype html>
     #dashboard { display: flex; flex-direction: column; }
     #usersCard { order: 1; }
     #createCard { order: 2; }
+    .modal { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; overflow-y: auto; padding: 18px; background: #17212b99; }
+    .modal .card { width: min(760px, 100%); margin: auto; }
     h2 { margin: 0 0 14px; font-size: 21px; }
     .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
     label { display: grid; gap: 6px; font-weight: 600; font-size: 14px; }
@@ -50,8 +52,9 @@ export const adminPage = String.raw`<!doctype html>
     </section>
 
     <section id="dashboard" class="hidden">
+      <div id="createModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="createTitle">
       <section id="createCard" class="card">
-        <h2>Pridať zamestnanca</h2>
+        <h2 id="createTitle">Pridať zamestnanca</h2>
         <form id="createForm">
           <div class="grid">
             <label>Meno a priezvisko<input id="name" required maxlength="200" placeholder="Ján Novák"></label>
@@ -59,10 +62,11 @@ export const adminPage = String.raw`<!doctype html>
             <label>Oddelenie<select id="department"></select></label>
             <label>Telefónne číslo<input id="phoneNumber" required inputmode="tel" maxlength="30" placeholder="0901 123 456"></label>
           </div>
-          <div class="actions"><button type="submit">Uložiť zamestnanca</button><button type="button" id="addAnother" class="secondary">Pridať ďalšieho zamestnanca</button><button type="button" id="cancelCreate" class="secondary hidden">Zrušiť</button><button type="button" id="signOut" class="secondary">Odhlásiť administráciu</button></div>
+          <div class="actions"><button type="submit">Uložiť zamestnanca</button><button type="button" id="addAnother" class="secondary">Pridať ďalšieho zamestnanca</button><button type="button" id="cancelCreate" class="secondary">Zrušiť</button></div>
           <p id="formMessage" class="message"></p>
         </form>
       </section>
+      </div>
       <section id="usersCard" class="card">
         <div class="actions" style="margin-top:0; justify-content:space-between"><h2 style="margin:0">Používatelia</h2><button type="button" id="addEmployee">Pridať zamestnanca</button></div>
         <p id="listMessage" class="message"></p>
@@ -119,18 +123,16 @@ export const adminPage = String.raw`<!doctype html>
       byId("createForm").reset();
       byId("department").innerHTML = departmentOptions("");
       setMessage("formMessage", "", false);
-      byId("createCard").classList.remove("hidden");
-      byId("cancelCreate").classList.remove("hidden");
-      byId("createCard").scrollIntoView({ behavior: "smooth", block: "start" });
+      byId("createModal").classList.remove("hidden");
       byId("name").focus();
     }
     byId("department").innerHTML = departmentOptions("");
     byId("unlock").addEventListener("click", openDashboard);
     byId("adminKey").addEventListener("keydown", (event) => { if (event.key === "Enter") openDashboard(); });
-    byId("createForm").addEventListener("submit", async (event) => { event.preventDefault(); try { await api("/admin-api/users", { method: "POST", body: JSON.stringify({ name: byId("name").value, role: byId("role").value, department: byId("department").value || null, phoneNumber: byId("phoneNumber").value }) }); event.target.reset(); await loadUsers(); setMessage("formMessage", "Zamestnanec bol uložený. Môžete pridať ďalšieho.", true); byId("usersCard").scrollIntoView({ behavior: "smooth", block: "start" }); } catch (error) { setMessage("formMessage", error.message, false); } });
+    byId("createForm").addEventListener("submit", async (event) => { event.preventDefault(); try { await api("/admin-api/users", { method: "POST", body: JSON.stringify({ name: byId("name").value, role: byId("role").value, department: byId("department").value || null, phoneNumber: byId("phoneNumber").value }) }); event.target.reset(); await loadUsers(); byId("createModal").classList.add("hidden"); setMessage("listMessage", "Zamestnanec bol uložený.", true); byId("usersCard").scrollIntoView({ behavior: "smooth", block: "start" }); } catch (error) { setMessage("formMessage", error.message, false); } });
     byId("addEmployee").addEventListener("click", showCreateForm);
     byId("addAnother").addEventListener("click", showCreateForm);
-    byId("cancelCreate").addEventListener("click", () => byId("createCard").classList.add("hidden"));
+    byId("cancelCreate").addEventListener("click", () => byId("createModal").classList.add("hidden"));
     byId("signOut").addEventListener("click", () => { sessionStorage.removeItem(keyName); byId("dashboard").classList.add("hidden"); byId("lock").classList.remove("hidden"); byId("adminKey").value = ""; });
     if (key()) openDashboard();
   </script>
