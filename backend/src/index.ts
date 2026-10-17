@@ -1,6 +1,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { neon } from "@neondatabase/serverless";
 import { adminPage } from "./admin-page.js";
+import { adminEmployeePage } from "./admin-employee-page.js";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -170,6 +171,12 @@ export default {
       });
     }
 
+    if (request.method === "GET" && /^\/admin\/user\/[0-9a-f-]{36}$/i.test(url.pathname)) {
+      return new Response(adminEmployeePage, {
+        headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+      });
+    }
+
     if (url.pathname.startsWith("/admin-api/")) {
       if (!await adminAuthorized(request)) return json({ error: "Neplatný administrátorský kľúč." }, 401);
 
@@ -208,6 +215,15 @@ export default {
       }
 
       const userMatch = url.pathname.match(/^\/admin-api\/users\/([0-9a-f-]{36})$/i);
+      if (request.method === "GET" && userMatch) {
+        const rows = await sql.query(
+          `SELECT id, full_name, role, department, phone_number, is_active, device_id
+             FROM app_users WHERE id = $1::uuid`,
+          [userMatch[1]],
+        );
+        if (rows.length === 0) return json({ error: "Používateľ nebol nájdený." }, 404);
+        return json(toAppUser(rows[0] as Record<string, unknown>));
+      }
       if (request.method === "DELETE" && userMatch) {
         const rows = await sql.query(
           "DELETE FROM app_users WHERE id = $1::uuid RETURNING id",
