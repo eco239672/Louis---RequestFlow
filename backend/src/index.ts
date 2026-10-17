@@ -23,10 +23,11 @@ type UserRole = "employee" | "manager" | "administrator";
 type AppUser = {
   id: string;
   name: string;
-  email: string;
   role: UserRole;
   department: string | null;
+  phoneNumber: string;
   isActive: boolean;
+  deviceLinked: boolean;
 };
 
 function json(body: unknown, status = 200): Response {
@@ -67,10 +68,6 @@ function validStatus(value: unknown): value is string {
   return ["new", "approved", "rejected", "in_progress", "waiting", "resolved", "completed", "cancelled"].includes(String(value));
 }
 
-function validEmail(value: unknown): value is string {
-  return typeof value === "string" && value.length <= 320 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
-
 function validRole(value: unknown): value is UserRole {
   return value === "employee" || value === "manager" || value === "administrator";
 }
@@ -79,14 +76,51 @@ function validDepartment(value: unknown): value is string | null {
   return value === null || value === undefined || (typeof value === "string" && value.trim().length <= 100);
 }
 
+function validDeviceId(value: unknown): value is string {
+  return typeof value === "string" && /^[a-zA-Z0-9-]{16,100}$/.test(value);
+}
+
+function normalizePhoneNumber(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  const normalized = trimmed.startsWith("+")
+    ? `+${trimmed.slice(1).replace(/\D/g, "")}`
+    : trimmed.replace(/\D/g, "");
+  const digits = normalized.replace(/\D/g, "");
+  return digits.length >= 8 && digits.length <= 15 ? normalized : null;
+}
+
 function toAppUser(row: Record<string, unknown>): AppUser {
   return {
     id: String(row.id),
     name: String(row.full_name),
-    email: String(row.email),
     role: String(row.role) as UserRole,
     department: row.department ? String(row.department) : null,
+    phoneNumber: String(row.phone_number),
     isActive: Boolean(row.is_active),
+    deviceLinked: Boolean(row.device_id),
+  };
+}
+
+async function userForDevice(request: Request): Promise<AppUser | null> {
+  const deviceId = request.headers.get("x-loius-device-id");
+  if (!validDeviceId(deviceId)) return null;
+
+  const rows = await sql.query(
+    `SELECT id, full_name, role, department, phone_number, is_active, device_id
+       FROM app_users
+      WHERE device_id = $1 AND is_active = true`,
+    [deviceId],
+  );
+  return rows.length === 1 ? toAppUser(rows[0] as Record<string, unknown>) : null;
+}
+
+function toCloudUserProfile(user: AppUser) {
+  return {
+    id: user.id,
+    fullName: user.name,
+    role: user.role,
+    department: user.department,
   };
 }
 
@@ -141,9 +175,9 @@ export default {
 
       if (request.method === "GET" && url.pathname === "/admin-api/users") {
         const rows = await sql.query(
-          `SELECT id, full_name, email, role, department, is_active
+          `SELECT id, full_name, role, department, phone_number, is_active, device_id
              FROM app_users
-            ORDER BY full_name ASC, email ASC`,
+            ORDER BY full_name ASC, phone_number ASC`,
         );
         return json(rows.map((row) => toAppUser(row as Record<string, unknown>)));
       }
@@ -155,14 +189,20 @@ export default {
         } catch {
           return json({ error: "Neplatné údaje používateľa." }, 400);
         }
-        if (!validText(payload.name, 200) || !validEmail(payload.email) || !validRole(payload.role) || !validDepartment(payload.department)) {
-          return json({ error: "Skontrolujte meno, e-mail, rolu a oddelenie." }, 400);
+        const phoneNumber = normalizePhoneNumber(payload.phoneNumber);
+        if (!validText(payload.name, 200) || !validRole(payload.role) || !validDepartment(payload.department) || !phoneNumber) {
+          return json({ error: "Skontrolujte meno, rolu, oddelenie a telefónne číslo." }, 400);
         }
         const rows = await sql.query(
-          `INSERT INTO app_users (full_name, email, role, department)
-           VALUES ($1, lower($2), $3, $4)
-           RETURNING id, full_name, email, role, department, is_active`,
-          [payload.name.trim(), payload.email.trim(), payload.role, typeof payload.department === "string" && payload.department.trim() ? payload.department.trim() : null],
+          `INSERT INTO app_users (full_name, email, role, department, phone_number)
+           VALUES ($1, NULL, $2, $3, $4)
+           RETURNING id, full_name, role, department, phone_number, is_active, device_id`,
+          [
+            payload.name.trim(),
+            payload.role,
+            typeof payload.department === "string" && payload.department.trim() ? payload.department.trim() : null,
+            phoneNumber,
+          ],
         );
         return json(toAppUser(rows[0] as Record<string, unknown>), 201);
       }
@@ -175,25 +215,34 @@ export default {
         } catch {
           return json({ error: "Neplatné údaje používateľa." }, 400);
         }
+        const phoneNumber = payload.phoneNumber === undefined ? null : normalizePhoneNumber(payload.phoneNumber);
         if ((payload.role !== undefined && !validRole(payload.role)) ||
             (payload.department !== undefined && !validDepartment(payload.department)) ||
-            (payload.isActive !== undefined && typeof payload.isActive !== "boolean")) {
-          return json({ error: "Skontrolujte rolu, oddelenie a stav účtu." }, 400);
+            (payload.isActive !== undefined && typeof payload.isActive !== "boolean") ||
+            (payload.unpairDevice !== undefined && typeof payload.unpairDevice !== "boolean") ||
+            (payload.phoneNumber !== undefined && !phoneNumber)) {
+          return json({ error: "Skontrolujte rolu, oddelenie, stav účtu a telefónne číslo." }, 400);
         }
         const rows = await sql.query(
           `UPDATE app_users
               SET role = COALESCE($2, role),
                   department = CASE WHEN $3 THEN $4 ELSE department END,
                   is_active = COALESCE($5, is_active),
+                  phone_number = CASE WHEN $6 THEN $7 ELSE phone_number END,
+                  device_id = CASE WHEN ($6 AND phone_number IS DISTINCT FROM $7) OR $8 THEN NULL ELSE device_id END,
+                  activated_at_utc = CASE WHEN ($6 AND phone_number IS DISTINCT FROM $7) OR $8 THEN NULL ELSE activated_at_utc END,
                   updated_at_utc = now()
             WHERE id = $1::uuid
-            RETURNING id, full_name, email, role, department, is_active`,
+            RETURNING id, full_name, role, department, phone_number, is_active, device_id`,
           [
             userMatch[1],
             payload.role ?? null,
             Object.prototype.hasOwnProperty.call(payload, "department"),
             typeof payload.department === "string" && payload.department.trim() ? payload.department.trim() : null,
             payload.isActive ?? null,
+            Object.prototype.hasOwnProperty.call(payload, "phoneNumber"),
+            phoneNumber,
+            payload.unpairDevice ?? false,
           ],
         );
         if (rows.length === 0) return json({ error: "Používateľ nebol nájdený." }, 404);
@@ -204,6 +253,48 @@ export default {
     }
 
     if (!authorized(request)) return json({ error: "Unauthorized" }, 401);
+
+    if (request.method === "POST" && url.pathname === "/device-enrollment") {
+      let payload: Record<string, unknown>;
+      try {
+        payload = await request.json() as Record<string, unknown>;
+      } catch {
+        return json({ error: "Neplatné údaje pre priradenie telefónu." }, 400);
+      }
+
+      const phoneNumber = normalizePhoneNumber(payload.phoneNumber);
+      if (!phoneNumber || !validDeviceId(payload.deviceId)) {
+        return json({ error: "Skontrolujte telefónne číslo." }, 400);
+      }
+
+      const rows = await sql.query(
+        `SELECT id, full_name, role, department, phone_number, is_active, device_id
+           FROM app_users
+          WHERE phone_number = $1 AND is_active = true`,
+        [phoneNumber],
+      );
+      const user = rows[0] as Record<string, unknown> | undefined;
+      if (!user) {
+        return json({ error: "Toto telefónne číslo nie je priradené aktívnemu používateľovi." }, 401);
+      }
+      if (user.device_id && String(user.device_id) !== payload.deviceId) {
+        return json({ error: "Používateľ je už priradený k inému telefónu. Administrátor musí najprv zmeniť alebo znova uložiť telefónne číslo." }, 409);
+      }
+
+      const enrolledRows = await sql.query(
+        `UPDATE app_users
+            SET device_id = $2,
+                activated_at_utc = COALESCE(activated_at_utc, now()),
+                updated_at_utc = now()
+          WHERE id = $1::uuid
+          RETURNING id, full_name, role, department, phone_number, is_active, device_id`,
+        [user.id, payload.deviceId],
+      );
+      return json(toCloudUserProfile(toAppUser(enrolledRows[0] as Record<string, unknown>)));
+    }
+
+    const currentUser = await userForDevice(request);
+    if (!currentUser) return json({ error: "Telefón nie je priradený aktívnemu používateľovi." }, 401);
 
     if (request.method === "GET" && url.pathname === "/requests") {
       const department = url.searchParams.get("department");
@@ -243,7 +334,7 @@ export default {
           payload.priority,
           payload.status,
           payload.createdAtUtc,
-          payload.originDeviceId,
+          request.headers.get("x-loius-device-id"),
         ],
       );
 
@@ -258,6 +349,9 @@ export default {
 
     const statusMatch = url.pathname.match(/^\/requests\/([0-9a-f-]{36})\/status$/i);
     if (request.method === "PATCH" && statusMatch) {
+      if (currentUser.role !== "manager" || !currentUser.department) {
+        return json({ error: "Schválenie môže vykonať iba vedúci priradeného oddelenia." }, 403);
+      }
       let payload: unknown;
       try {
         payload = await request.json();
@@ -273,9 +367,9 @@ export default {
       const rows = await sql.query(
         `UPDATE work_requests
             SET status = $2, updated_at_utc = now()
-          WHERE id = $1::uuid AND status = 'new'
+          WHERE id = $1::uuid AND status = 'new' AND department = $3
           RETURNING id, local_reference, title, description, department, priority, status, created_at_utc, origin_device_id`,
-        [statusMatch[1], status],
+        [statusMatch[1], status, currentUser.department],
       );
 
       if (rows.length > 0) return json(toResponse(rows[0]));

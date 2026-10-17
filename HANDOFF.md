@@ -10,13 +10,12 @@
 - Na oboch emulátoroch sú uložené rovnaké cloudové údaje. Test prešiel oboma smermi v oddelení IT podpora: požiadavka zamestnanca sa zobrazila vedúcemu a požiadavka vedúceho zamestnancovi.
 - Cloudová databáza už podporuje stavy **potvrdená** a **odmietnutá**. Funkcia `loiusapi` je nasadená s API pre bezpečnú zmenu stavu a test vytvorenia → potvrdenia prešiel v cloude.
 - Aktuálny APK je nainštalovaný na oboch emulátoroch. V rozhraní sú viditeľné stavy a tlačidlá **Potvrdiť/Odmietnuť**; potvrdenie cez rozhranie vedúceho zmenilo stav v cloude na `approved` a druhý telefón ho načítal.
-- Každý používateľ si v nastavení zadá meno a pracovnú pozíciu. Ak pozícia obsahuje slovo **vedúci** (aj bez diakritiky), zobrazia sa mu tlačidlá **Potvrdiť/Odmietnuť**; ostatným používateľom nie.
+- Je pripravená zmena na cloudové priradenie telefónu k používateľovi. Administrátor nastaví meno, rolu, oddelenie a telefónne číslo; aplikácia si rolu nenačítava z voľne vyplneného textu.
 - Po otvorení oddelenia aplikácia automaticky synchronizuje údaje každých 15 sekúnd. Obnova sa zastaví po odchode z oddelenia a bez internetu bezpečne ponechá lokálne dáta.
-- V cloude je pripravené administračné rozhranie `/admin` s tabuľkou `app_users`. Administrátor môže založiť používateľa, určiť mu rolu, oddelenie a deaktivovať účet. Samostatný administrátorský kľúč je v databáze uložený iba ako hash.
+- V cloude je pripravené administračné rozhranie `/admin` s tabuľkou `app_users`. Administrátor môže založiť používateľa v poradí meno, rola, oddelenie, telefónne číslo a deaktivovať účet. Samostatný administrátorský kľúč je v databáze uložený iba ako hash.
 
 ## Ďalšie pokračovanie
 
-1. Pred produkčným použitím doplniť individuálne prihlásenie a roly zamestnanec/vedúci. Súčasné rozpoznanie slova **vedúci** je iba lokálne pravidlo rozhrania a nie je ním bezpečne vynútené oprávnenie na serveri.
-2. Prepojiť mobilnú aplikáciu s účtami z `app_users`, aby server povolil rozhodnutie iba aktívnemu vedúcemu zodpovedajúceho oddelenia.
-3. Pridať registráciu zariadenia a push notifikácie: vedúcemu pri novej požiadavke a odosielateľovi po schválení alebo odmietnutí.
+1. Nasadiť pripravenú migráciu `004_user_device_enrollment.sql`, funkciu a Android APK. Server potom povolí rozhodnutie iba aktívnemu vedúcemu príslušného oddelenia podľa telefónneho čísla a priradeného zariadenia.
+2. Pridať push notifikácie: vedúcemu pri novej požiadavke a odosielateľovi po schválení alebo odmietnutí.
 4. Upraviť obrazovku zoznamu pre malé telefóny, aby mali prijaté požiadavky a rozhodovacie tlačidlá viac priestoru na zobrazenie.

@@ -7,7 +7,7 @@
     <Grid Padding="20" RowDefinitions="Auto,Auto,*" RowSpacing="20">
         <Label Text="Louis" FontAttributes="Bold" FontSize="24"
                HorizontalOptions="Fill" HorizontalTextAlignment="Center" />
-        <Button Grid.Row="1" Text="Nastavenie osoby a synchronizácie" Clicked="CloudSettings_Clicked"
+        <Button Grid.Row="1" Text="Pripojenie telefónu a synchronizácia" Clicked="CloudSettings_Clicked"
                 HorizontalOptions="Center" />
         <VerticalStackLayout Grid.Row="2" Spacing="12">
             <Label Text="Vyber oddelenie, pre ktoré chceš vytvoriť požiadavku."

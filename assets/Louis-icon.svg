@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <rect width="256" height="256" rx="48" fill="#173F70"/>
+  <rect x="10" y="10" width="236" height="236" rx="39" fill="none" stroke="#62D5C8" stroke-width="8"/>
+  <text x="128" y="146" text-anchor="middle" fill="#FFFFFF" font-family="Segoe UI, Arial, sans-serif" font-size="49" font-weight="700">Louis</text>
+</svg>

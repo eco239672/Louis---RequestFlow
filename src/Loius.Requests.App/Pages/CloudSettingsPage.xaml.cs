@@ -6,14 +6,20 @@ public partial class CloudSettingsPage : ContentPage
 {
     private readonly CloudSyncOptions _options;
     private readonly UserProfileOptions _userProfile;
+    private readonly CloudUserEnrollmentService _enrollment;
 
-    public CloudSettingsPage(CloudSyncOptions options, UserProfileOptions userProfile)
+    public CloudSettingsPage(
+        CloudSyncOptions options,
+        UserProfileOptions userProfile,
+        CloudUserEnrollmentService enrollment)
     {
         InitializeComponent();
         _options = options;
         _userProfile = userProfile;
-        FullNameEntry.Text = _userProfile.FullName;
-        JobTitleEntry.Text = _userProfile.JobTitle;
+        _enrollment = enrollment;
+        AssignedUserLabel.Text = _userProfile.IsEnrolled
+            ? $"Priradený používateľ: {_userProfile.FullName} ({_userProfile.RoleDisplayName})"
+            : "Tento telefón ešte nie je priradený k používateľovi.";
         EndpointEntry.Text = _options.Endpoint;
         AccessKeyEntry.Text = _options.AccessKey;
     }
@@ -22,20 +28,28 @@ public partial class CloudSettingsPage : ContentPage
     {
         var endpoint = EndpointEntry.Text?.Trim() ?? string.Empty;
         var accessKey = AccessKeyEntry.Text?.Trim() ?? string.Empty;
-        var fullName = FullNameEntry.Text?.Trim() ?? string.Empty;
-        var jobTitle = JobTitleEntry.Text?.Trim() ?? string.Empty;
+        var phoneNumber = PhoneNumberEntry.Text?.Trim() ?? string.Empty;
         if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var uri) ||
             uri.Scheme != Uri.UriSchemeHttps ||
             string.IsNullOrWhiteSpace(accessKey) ||
-            string.IsNullOrWhiteSpace(fullName) ||
-            string.IsNullOrWhiteSpace(jobTitle))
+            string.IsNullOrWhiteSpace(phoneNumber))
         {
-            await DisplayAlertAsync("Neplatné údaje", "Zadaj meno, funkciu, HTTPS adresu a prístupový kľúč.", "Rozumiem");
+            await DisplayAlertAsync("Neplatné údaje", "Zadaj telefónne číslo, HTTPS adresu a prístupový kľúč.", "Rozumiem");
             return;
         }
 
-        _options.Save(endpoint, accessKey);
-        _userProfile.Save(fullName, jobTitle);
+        try
+        {
+            var profile = await _enrollment.EnrollAsync(endpoint, accessKey, phoneNumber);
+            _options.Save(endpoint, accessKey);
+            _userProfile.Save(profile);
+        }
+        catch (Exception exception) when (exception is HttpRequestException or InvalidOperationException)
+        {
+            await DisplayAlertAsync("Pripojenie sa nepodarilo", exception.Message, "Rozumiem");
+            return;
+        }
+
         await Navigation.PopAsync();
     }
 }

@@ -9,18 +9,21 @@ public partial class MainPage : ContentPage
     private readonly CloudSyncOptions _cloudSyncOptions;
     private readonly CloudRequestSynchronizer _synchronizer;
     private readonly UserProfileOptions _userProfile;
+    private readonly CloudUserEnrollmentService _enrollment;
 
     public MainPage(
         LocalRequestRepository repository,
         CloudSyncOptions cloudSyncOptions,
         CloudRequestSynchronizer synchronizer,
-        UserProfileOptions userProfile)
+        UserProfileOptions userProfile,
+        CloudUserEnrollmentService enrollment)
     {
         InitializeComponent();
         _repository = repository;
         _cloudSyncOptions = cloudSyncOptions;
         _synchronizer = synchronizer;
         _userProfile = userProfile;
+        _enrollment = enrollment;
     }
 
     private async void Department_Clicked(object? sender, EventArgs e)
@@ -36,6 +39,6 @@ public partial class MainPage : ContentPage
 
     private async void CloudSettings_Clicked(object? sender, EventArgs e)
     {
-        await Navigation.PushAsync(new CloudSettingsPage(_cloudSyncOptions, _userProfile));
+        await Navigation.PushAsync(new CloudSettingsPage(_cloudSyncOptions, _userProfile, _enrollment));
     }
 }

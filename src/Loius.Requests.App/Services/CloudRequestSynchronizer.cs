@@ -10,15 +10,18 @@ public sealed class CloudRequestSynchronizer
     private readonly CloudSyncOptions _options;
     private readonly HttpClient _httpClient;
     private readonly LocalRequestRepository _repository;
+    private readonly DeviceIdentityService _deviceIdentity;
 
     public CloudRequestSynchronizer(
         CloudSyncOptions options,
         HttpClient httpClient,
-        LocalRequestRepository repository)
+        LocalRequestRepository repository,
+        DeviceIdentityService deviceIdentity)
     {
         _options = options;
         _httpClient = httpClient;
         _repository = repository;
+        _deviceIdentity = deviceIdentity;
     }
 
     public async Task<bool> SyncDepartmentAsync(string department, CancellationToken cancellationToken = default)
@@ -63,6 +66,7 @@ public sealed class CloudRequestSynchronizer
     {
         var request = new HttpRequestMessage(method, new Uri($"{_options.Endpoint}/{relativePath}"));
         request.Headers.Add("X-Loius-Sync-Key", _options.AccessKey);
+        request.Headers.Add("X-Loius-Device-Id", _deviceIdentity.GetDeviceId());
         return request;
     }
 

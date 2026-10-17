@@ -14,6 +14,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<DeviceIdentityService>();
         builder.Services.AddSingleton<CloudSyncOptions>();
         builder.Services.AddSingleton<UserProfileOptions>();
+        builder.Services.AddSingleton<CloudUserEnrollmentService>();
         builder.Services.AddSingleton<LocalRequestRepository>();
         builder.Services.AddSingleton<HttpClient>();
         builder.Services.AddSingleton<CloudRequestSynchronizer>();

@@ -27,9 +27,8 @@ export const adminPage = String.raw`<!doctype html>
     .actions { display: flex; gap: 10px; align-items: center; margin-top: 16px; flex-wrap: wrap; }
     .message { min-height: 21px; margin: 12px 0 0; color: #a12929; }
     .message.ok { color: #187341; }
-    .user { display: grid; grid-template-columns: minmax(180px, 1.1fr) minmax(140px, .8fr) minmax(140px, .8fr) auto; gap: 10px; align-items: end; padding: 14px 0; border-top: 1px solid #e2e8ee; }
+    .user { display: grid; grid-template-columns: minmax(180px, 1.1fr) minmax(120px, .7fr) minmax(120px, .7fr) minmax(160px, .9fr) auto; gap: 10px; align-items: end; padding: 14px 0; border-top: 1px solid #e2e8ee; }
     .user:first-of-type { border-top: 0; }
-    .email { color: #637281; font-size: 13px; margin-top: 3px; }
     .badge { display: inline-block; font-size: 12px; margin-top: 6px; padding: 3px 7px; border-radius: 99px; background: #e6f3eb; color: #1e6a3b; }
     .badge.inactive { background: #f6e8e8; color: #963636; }
     #lock { max-width: 480px; margin: 48px auto; }
@@ -53,9 +52,9 @@ export const adminPage = String.raw`<!doctype html>
         <form id="createForm">
           <div class="grid">
             <label>Meno a priezvisko<input id="name" required maxlength="200" placeholder="Ján Novák"></label>
-            <label>E-mail<input id="email" required type="email" maxlength="320" placeholder="jan.novak@firma.sk"></label>
             <label>Rola<select id="role"><option value="employee">Zamestnanec</option><option value="manager">Vedúci</option><option value="administrator">Administrátor</option></select></label>
             <label>Oddelenie<select id="department"></select></label>
+            <label>Telefónne číslo<input id="phoneNumber" required inputmode="tel" maxlength="30" placeholder="0901 123 456"></label>
           </div>
           <div class="actions"><button type="submit">Vytvoriť používateľa</button><button type="button" id="signOut" class="secondary">Odhlásiť administráciu</button></div>
           <p id="formMessage" class="message"></p>
@@ -89,16 +88,21 @@ export const adminPage = String.raw`<!doctype html>
       const users = await api("/admin-api/users");
       const container = byId("users");
       if (!users.length) { container.innerHTML = "<p>Zatiaľ nie sú vytvorení žiadni používatelia.</p>"; return; }
-      container.innerHTML = users.map((user) => '<div class="user" data-id="' + user.id + '"><div><strong>' + escapeHtml(user.name) + '</strong><div class="email">' + escapeHtml(user.email) + '</div><span class="badge ' + (user.isActive ? '' : 'inactive') + '">' + (user.isActive ? 'Aktívny účet' : 'Deaktivovaný účet') + '</span></div><label>Rola<select class="user-role">' + roleOptions(user.role) + '</select></label><label>Oddelenie<select class="user-department">' + departmentOptions(user.department || "") + '</select></label><button class="save-user">Uložiť</button><button class="toggle-user secondary">' + (user.isActive ? 'Deaktivovať' : 'Aktivovať') + '</button></div>').join("");
+      container.innerHTML = users.map((user) => '<div class="user" data-id="' + user.id + '"><div><strong>' + escapeHtml(user.name) + '</strong><span class="badge ' + (user.isActive ? '' : 'inactive') + '">' + (user.isActive ? 'Aktívny účet' : 'Deaktivovaný účet') + '</span><span class="badge ' + (user.deviceLinked ? '' : 'inactive') + '">' + (user.deviceLinked ? 'Telefón pripojený' : 'Telefón nepripojený') + '</span></div><label>Rola<select class="user-role">' + roleOptions(user.role) + '</select></label><label>Oddelenie<select class="user-department">' + departmentOptions(user.department || "") + '</select></label><label>Telefónne číslo<input class="user-phone-number" inputmode="tel" maxlength="30" value="' + escapeHtml(user.phoneNumber) + '"></label><button class="save-user">Uložiť</button><button class="toggle-user secondary">' + (user.isActive ? 'Deaktivovať' : 'Aktivovať') + '</button>' + (user.deviceLinked ? '<button class="unpair-user secondary">Odpojiť telefón</button>' : '') + '</div>').join("");
       container.querySelectorAll(".save-user").forEach((button) => button.addEventListener("click", () => saveUser(button.closest(".user"))));
       container.querySelectorAll(".toggle-user").forEach((button) => button.addEventListener("click", () => toggleUser(button.closest(".user"), button.textContent === "Aktivovať")));
+      container.querySelectorAll(".unpair-user").forEach((button) => button.addEventListener("click", () => unpairDevice(button.closest(".user"))));
     }
     async function saveUser(row) {
-      try { await api("/admin-api/users/" + row.dataset.id, { method: "PATCH", body: JSON.stringify({ role: row.querySelector(".user-role").value, department: row.querySelector(".user-department").value || null }) }); setMessage("listMessage", "Používateľ bol uložený.", true); await loadUsers(); }
+      try { const phoneNumber = row.querySelector(".user-phone-number").value.trim(); await api("/admin-api/users/" + row.dataset.id, { method: "PATCH", body: JSON.stringify({ role: row.querySelector(".user-role").value, department: row.querySelector(".user-department").value || null, phoneNumber }) }); setMessage("listMessage", "Používateľ bol uložený.", true); await loadUsers(); }
       catch (error) { setMessage("listMessage", error.message, false); }
     }
     async function toggleUser(row, isActive) {
       try { await api("/admin-api/users/" + row.dataset.id, { method: "PATCH", body: JSON.stringify({ isActive }) }); setMessage("listMessage", "Stav účtu bol zmenený.", true); await loadUsers(); }
+      catch (error) { setMessage("listMessage", error.message, false); }
+    }
+    async function unpairDevice(row) {
+      try { await api("/admin-api/users/" + row.dataset.id, { method: "PATCH", body: JSON.stringify({ unpairDevice: true }) }); setMessage("listMessage", "Telefón bol odpojený.", true); await loadUsers(); }
       catch (error) { setMessage("listMessage", error.message, false); }
     }
     async function openDashboard() {
@@ -111,7 +115,7 @@ export const adminPage = String.raw`<!doctype html>
     byId("department").innerHTML = departmentOptions("");
     byId("unlock").addEventListener("click", openDashboard);
     byId("adminKey").addEventListener("keydown", (event) => { if (event.key === "Enter") openDashboard(); });
-    byId("createForm").addEventListener("submit", async (event) => { event.preventDefault(); try { await api("/admin-api/users", { method: "POST", body: JSON.stringify({ name: byId("name").value, email: byId("email").value, role: byId("role").value, department: byId("department").value || null }) }); event.target.reset(); setMessage("formMessage", "Používateľ bol vytvorený.", true); await loadUsers(); } catch (error) { setMessage("formMessage", error.message, false); } });
+    byId("createForm").addEventListener("submit", async (event) => { event.preventDefault(); try { await api("/admin-api/users", { method: "POST", body: JSON.stringify({ name: byId("name").value, role: byId("role").value, department: byId("department").value || null, phoneNumber: byId("phoneNumber").value }) }); event.target.reset(); setMessage("formMessage", "Používateľ bol vytvorený.", true); await loadUsers(); } catch (error) { setMessage("formMessage", error.message, false); } });
     byId("signOut").addEventListener("click", () => { sessionStorage.removeItem(keyName); byId("dashboard").classList.add("hidden"); byId("lock").classList.remove("hidden"); byId("adminKey").value = ""; });
     if (key()) openDashboard();
   </script>

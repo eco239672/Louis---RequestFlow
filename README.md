@@ -35,12 +35,14 @@ Samostatný cloudový projekt **Loius Requests** beží v Neone v regióne EÚ. 
 
 Aktuálny prístupový kľúč je len dočasný mechanizmus pre testovacie zariadenia. Pred produkčným nasadením treba doplniť samostatné používateľské účty, prihlásenie a oprávnenia podľa roly.
 
-## Administrácia používateľov
+## Administrácia používateľov a telefónov
 
-Cloud obsahuje administračné rozhranie na ceste `/admin`. Administrátor v ňom vytvára používateľov, priraďuje rolu zamestnanec/vedúci/administrátor a oddelenie a môže účet deaktivovať. Prístup chráni samostatný administrátorský kľúč uložený v databáze iba vo forme hash-u. Rozhranie pripravuje údaje pre budúce prihlásenie a cielené push notifikácie; mobilná aplikácia zatiaľ ešte nepoužíva cloudové účty pri prihlasovaní.
+Cloud obsahuje administračné rozhranie na ceste `/admin`. Administrátor pri používateľovi zadá v poradí meno, rolu zamestnanec/vedúci/administrátor, oddelenie a telefónne číslo a môže účet deaktivovať. Pri prvom otvorení aplikácie používateľ zadá svoje telefónne číslo; cloud ho priradí ku konkrétnemu zariadeniu a načíta rolu. Telefón tak nemôže sám prepísať práva vedúceho.
+
+Prístup administrátora chráni samostatný administrátorský kľúč uložený v databáze iba vo forme hash-u. Telefónne číslo je osobný údaj, preto má byť viditeľné iba administrátorovi a používateľom aplikácie sa nezobrazuje.
 
 ## Ďalší krok
 
 - vedúci zvoleného oddelenia potvrdí alebo odmietne novú požiadavku; zvolené oddelenie sa pritom nemení;
-- doplniť prihlásenie a roly, aby tlačidlá rozhodnutia videl a používal iba vedúci príslušného oddelenia;
+- nasadiť cloudové priradenie telefónov a rolí, aby tlačidlá rozhodnutia videl a používal iba vedúci príslušného oddelenia;
 - používateľ si nebude môcť sám meniť svoje oddelenie ani vedúceho: tieto údaje bude spravovať administrátor externe.

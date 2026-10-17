@@ -6,13 +6,13 @@
     <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="14">
             <Label Text="Nastavenie synchronizácie" FontAttributes="Bold" FontSize="24" />
-            <Label Text="Cloudové údaje musia byť rovnaké na oboch telefónoch. Meno a funkcia patria len tomuto zariadeniu. Funkcia obsahujúca slovo „vedúci“ zobrazí tlačidlá na potvrdenie požiadaviek."
+            <Label Text="Rolu a oddelenie pridelí iba administrátor v cloude. Pri prvom nastavení zadajte telefónne číslo, ktoré má administrátor uložené pri vašom mene."
                    TextColor="Gray" />
-            <Entry x:Name="FullNameEntry" Placeholder="Meno a priezvisko" />
-            <Entry x:Name="JobTitleEntry" Placeholder="Funkcia, napr. Vedúci IT podpory" />
+            <Label x:Name="AssignedUserLabel" TextColor="Gray" />
+            <Entry x:Name="PhoneNumberEntry" Placeholder="Telefónne číslo" Keyboard="Telephone" />
             <Entry x:Name="EndpointEntry" Placeholder="https://…" Keyboard="Url" />
             <Entry x:Name="AccessKeyEntry" Placeholder="Prístupový kľúč" IsPassword="True" />
-            <Button Text="Uložiť" Clicked="Save_Clicked" />
+            <Button Text="Pripojiť tento telefón" Clicked="Save_Clicked" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>
