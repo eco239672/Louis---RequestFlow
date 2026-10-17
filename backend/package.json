@@ -6,7 +6,7 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@neon/functions": "^0.8.0",
+    "@neon/functions": "^0.11.0",
     "@neondatabase/serverless": "^1.2.0"
   },
   "devDependencies": {
