@@ -10,7 +10,7 @@
     "@neondatabase/serverless": "^1.2.0"
   },
   "devDependencies": {
-    "@types/node": "^24.7.2",
+    "@types/node": "^26.6.5",
     "esbuild": "^0.28.2",
     "typescript": "^5.9.3"
   }
