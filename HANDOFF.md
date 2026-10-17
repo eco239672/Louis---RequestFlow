@@ -11,6 +11,7 @@
 - Cloudová databáza už podporuje stavy **potvrdená** a **odmietnutá**. Funkcia `loiusapi` je nasadená s API pre bezpečnú zmenu stavu a test vytvorenia → potvrdenia prešiel v cloude.
 - Aktuálny APK je nainštalovaný na oboch emulátoroch. V rozhraní sú viditeľné stavy a tlačidlá **Potvrdiť/Odmietnuť**; potvrdenie cez rozhranie vedúceho zmenilo stav v cloude na `approved` a druhý telefón ho načítal.
 - Každý používateľ si v nastavení zadá meno a pracovnú pozíciu. Ak pozícia obsahuje slovo **vedúci** (aj bez diakritiky), zobrazia sa mu tlačidlá **Potvrdiť/Odmietnuť**; ostatným používateľom nie.
+- Po otvorení oddelenia aplikácia automaticky synchronizuje údaje každých 15 sekúnd. Obnova sa zastaví po odchode z oddelenia a bez internetu bezpečne ponechá lokálne dáta.
 
 ## Ďalšie pokračovanie
 

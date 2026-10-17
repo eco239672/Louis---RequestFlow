@@ -5,10 +5,13 @@ namespace Loius.Requests.App.Pages;
 
 public partial class DepartmentRequestsPage : ContentPage
 {
+    private static readonly TimeSpan AutoRefreshInterval = TimeSpan.FromSeconds(15);
     private readonly Department _department;
     private readonly LocalRequestRepository _repository;
     private readonly CloudRequestSynchronizer? _synchronizer;
     private readonly UserProfileOptions? _userProfile;
+    private readonly SemaphoreSlim _refreshLock = new(1, 1);
+    private CancellationTokenSource? _autoRefreshCancellation;
 
     protected DepartmentRequestsPage(
         Department department,
@@ -37,7 +40,26 @@ public partial class DepartmentRequestsPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await SynchronizeAndRefreshAsync();
+
+        _autoRefreshCancellation?.Cancel();
+        _autoRefreshCancellation?.Dispose();
+        _autoRefreshCancellation = new CancellationTokenSource();
+
+        var cancellationToken = _autoRefreshCancellation.Token;
+        await SynchronizeAndRefreshAsync(cancellationToken);
+
+        if (!cancellationToken.IsCancellationRequested)
+        {
+            _ = RefreshAutomaticallyAsync(cancellationToken);
+        }
+    }
+
+    protected override void OnDisappearing()
+    {
+        _autoRefreshCancellation?.Cancel();
+        _autoRefreshCancellation?.Dispose();
+        _autoRefreshCancellation = null;
+        base.OnDisappearing();
     }
 
     protected override void OnSizeAllocated(double width, double height)
@@ -81,19 +103,53 @@ public partial class DepartmentRequestsPage : ContentPage
         RequestsView.ItemsSource = requests;
     }
 
-    private async Task SynchronizeAndRefreshAsync()
+    private async Task RefreshAutomaticallyAsync(CancellationToken cancellationToken)
     {
+        using var timer = new PeriodicTimer(AutoRefreshInterval);
+
         try
         {
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                await SynchronizeAndRefreshAsync(cancellationToken);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Automatic refresh ends when the user leaves this department.
+        }
+    }
+
+    private async Task SynchronizeAndRefreshAsync(CancellationToken cancellationToken = default)
+    {
+        var lockTaken = false;
+
+        try
+        {
+            await _refreshLock.WaitAsync(cancellationToken);
+            lockTaken = true;
+
             if (_synchronizer is not null)
             {
-                await _synchronizer.SyncDepartmentAsync(_department.Name);
+                await _synchronizer.SyncDepartmentAsync(_department.Name, cancellationToken);
             }
         }
         catch (HttpRequestException)
         {
-            // The local queue is retained and retries next time the page opens.
+            // The local queue is retained and the next automatic refresh retries it.
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
+        finally
+        {
+            if (lockTaken)
+            {
+                _refreshLock.Release();
+            }
+        }
+
         await RefreshAsync();
     }
 

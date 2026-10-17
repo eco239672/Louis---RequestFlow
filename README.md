@@ -15,6 +15,7 @@ Offline-first základ aplikácie na evidenciu požiadaviek pre Windows, Android 
 - UUID, dočasná lokálna referencia, čas v UTC, priorita semafora a stav;
 - stavy požiadavky: čaká na potvrdenie vedúcim, potvrdená, odmietnutá, rozpracovaná, čaká sa, vybavená, dokončená alebo zrušená;
 - fronta neodoslaných zmien so synchronizáciou cez cloudové API;
+- automatická synchronizácia otvoreného oddelenia každých 15 sekúnd, keď je aplikácia otvorená;
 - stabilné radenie: červená → žltá → zelená, potom od najstaršej požiadavky.
 
 ## Spustenie
