@@ -27,7 +27,7 @@
     <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#123A63" BaseSize="128,128" />
     <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
-    <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
+    <PackageReference Include="sqlite-net-pcl" Version="1.11.285" />
   </ItemGroup>
 
   <!-- Override SQLitePCLRaw 2.1.2 brought in by sqlite-net-pcl. -->
