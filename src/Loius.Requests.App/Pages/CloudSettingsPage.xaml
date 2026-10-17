@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Loius.Requests.App.Pages.CloudSettingsPage"
+             Title="Synchronizácia">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="14">
+            <Label Text="Nastavenie synchronizácie" FontAttributes="Bold" FontSize="24" />
+            <Label Text="Cloudové údaje musia byť rovnaké na oboch telefónoch. Meno a funkcia patria len tomuto zariadeniu. Funkcia obsahujúca slovo „vedúci“ zobrazí tlačidlá na potvrdenie požiadaviek."
+                   TextColor="Gray" />
+            <Entry x:Name="FullNameEntry" Placeholder="Meno a priezvisko" />
+            <Entry x:Name="JobTitleEntry" Placeholder="Funkcia, napr. Vedúci IT podpory" />
+            <Entry x:Name="EndpointEntry" Placeholder="https://…" Keyboard="Url" />
+            <Entry x:Name="AccessKeyEntry" Placeholder="Prístupový kľúč" IsPassword="True" />
+            <Button Text="Uložiť" Clicked="Save_Clicked" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

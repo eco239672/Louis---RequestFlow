@@ -1,0 +1,18 @@
+# .NET / MAUI build output and local IDE settings
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+.vs/
+
+# Node dependencies and generated function archives
+node_modules/
+backend/dist/
+
+# Local emulator captures and logs
+phone-*.png
+phone-*.xml
+emulator-*.log
+
+# Local Android Studio profile
+.android-studio-fresh/

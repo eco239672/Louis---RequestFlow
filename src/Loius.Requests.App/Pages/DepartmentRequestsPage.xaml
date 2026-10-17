@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Loius.Requests.App.Pages.DepartmentRequestsPage"
+             Title="Louis"
+             NavigationPage.HasNavigationBar="False"
+             NavigationPage.HasBackButton="False">
+    <Grid x:Name="PageLayout" Padding="20" RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="12">
+        <Label Text="Louis" FontAttributes="Bold" FontSize="24"
+               HorizontalOptions="Fill" HorizontalTextAlignment="Center" />
+        <VerticalStackLayout Grid.Row="1" Spacing="2">
+            <Label x:Name="DepartmentNameLabel" FontAttributes="Bold" FontSize="28"
+                   LineBreakMode="WordWrap" />
+            <Label x:Name="LeaderLabel" TextColor="Gray" LineBreakMode="WordWrap" />
+        </VerticalStackLayout>
+        <VerticalStackLayout Grid.Row="2" Spacing="8">
+            <Entry x:Name="TitleEntry" Placeholder="Názov požiadavky"
+                   Keyboard="Text" ReturnType="Next" Completed="TitleEntry_Completed"
+                   HorizontalOptions="Fill" />
+            <Editor x:Name="DescriptionEditor" Placeholder="Popis (voliteľné)"
+                    Keyboard="Text" AutoSize="TextChanges" HorizontalOptions="Fill" />
+            <Picker x:Name="PriorityPicker" Title="Priorita" HorizontalOptions="Fill" />
+            <Button Text="Odoslať požiadavku" Clicked="CreateRequest_Clicked" HorizontalOptions="Fill" />
+        </VerticalStackLayout>
+        <CollectionView x:Name="RequestsView" Grid.Row="3" SelectionMode="None">
+            <CollectionView.EmptyView>
+                <Label Text="Pre toto oddelenie zatiaľ neexistujú žiadne požiadavky."
+                       HorizontalOptions="Center" Margin="0,24" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Frame Margin="0,4" Padding="12" BorderColor="#D9E1E8">
+                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+                            <BoxView Grid.RowSpan="6" WidthRequest="8" CornerRadius="4" Color="{Binding PriorityColor}" />
+                            <Label Grid.Column="1" Text="{Binding Title}" FontAttributes="Bold" />
+                            <Label Grid.Row="1" Grid.Column="1" Text="{Binding LocalReference}" FontSize="12" TextColor="Gray" />
+                            <Label Grid.Row="2" Grid.Column="1" Text="{Binding CreatedAtDisplay}" FontSize="12" TextColor="Gray" />
+                            <Label Grid.Row="3" Grid.Column="1" Text="{Binding StatusDisplay}"
+                                   FontSize="12" TextColor="#C58A00" />
+                            <HorizontalStackLayout Grid.Row="4" Grid.Column="1" Spacing="8" IsVisible="{Binding CanBeApprovedByCurrentUser}">
+                                <Button Text="Potvrdiť" Clicked="Approve_Clicked" CommandParameter="{Binding Id}" />
+                                <Button Text="Odmietnuť" Clicked="Reject_Clicked" CommandParameter="{Binding Id}" />
+                            </HorizontalStackLayout>
+                            <Label Grid.Row="5" Grid.Column="1" Text="{Binding SubmissionStateDisplay}"
+                                   FontSize="12" TextColor="#C58A00" />
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+        <Button Grid.Row="4" Text="← Späť" Clicked="Back_Clicked"
+                WidthRequest="140" HorizontalOptions="Center" />
+    </Grid>
+</ContentPage>

@@ -1,0 +1,4 @@
+<maui:MauiWinUIApplication xmlns:maui="using:Microsoft.Maui"
+                           xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                           x:Class="Loius.Requests.App.WinUI.App">
+</maui:MauiWinUIApplication>

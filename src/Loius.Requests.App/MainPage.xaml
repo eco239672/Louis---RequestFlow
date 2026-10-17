@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Loius.Requests.App.MainPage"
+             Title="Louis"
+             NavigationPage.HasNavigationBar="False">
+    <Grid Padding="20" RowDefinitions="Auto,Auto,*" RowSpacing="20">
+        <Label Text="Louis" FontAttributes="Bold" FontSize="24"
+               HorizontalOptions="Fill" HorizontalTextAlignment="Center" />
+        <Button Grid.Row="1" Text="Nastavenie osoby a synchronizácie" Clicked="CloudSettings_Clicked"
+                HorizontalOptions="Center" />
+        <VerticalStackLayout Grid.Row="2" Spacing="12">
+            <Label Text="Vyber oddelenie, pre ktoré chceš vytvoriť požiadavku."
+                   TextColor="Gray" HorizontalOptions="Fill" HorizontalTextAlignment="Center"
+                   LineBreakMode="WordWrap" />
+            <FlexLayout Direction="Row" Wrap="Wrap" AlignItems="Start" JustifyContent="Center">
+                <Button Text="Nákup" Clicked="Department_Clicked" WidthRequest="258" HeightRequest="56" Margin="4" />
+                <Button Text="Marketing" Clicked="Department_Clicked" WidthRequest="258" HeightRequest="56" Margin="4" />
+                <Button Text="IT podpora" Clicked="Department_Clicked" WidthRequest="258" HeightRequest="56" Margin="4" />
+                <Button Text="Údržba a technika" Clicked="Department_Clicked" WidthRequest="258" HeightRequest="56" Margin="4" />
+                <Button Text="Sklad a logistika" Clicked="Department_Clicked" WidthRequest="258" HeightRequest="56" Margin="4" />
+                <Button Text="Financie a účtovníctvo" Clicked="Department_Clicked" WidthRequest="258" HeightRequest="56" Margin="4" />
+                <Button Text="Personalistika (HR)" Clicked="Department_Clicked" WidthRequest="258" HeightRequest="56" Margin="4" />
+                <Button Text="Obchod a zákaznícka podpora" Clicked="Department_Clicked" WidthRequest="258" HeightRequest="56" Margin="4" />
+                <Button Text="Vedenie firmy" Clicked="Department_Clicked" WidthRequest="258" HeightRequest="56" Margin="4" />
+                <Button Text="Ostatné" Clicked="Department_Clicked" WidthRequest="258" HeightRequest="56" Margin="4" />
+            </FlexLayout>
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>
