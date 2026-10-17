@@ -215,27 +215,31 @@ export default {
         } catch {
           return json({ error: "Neplatné údaje používateľa." }, 400);
         }
+        const name = payload.name === undefined ? null : typeof payload.name === "string" ? payload.name.trim() : null;
         const phoneNumber = payload.phoneNumber === undefined ? null : normalizePhoneNumber(payload.phoneNumber);
-        if ((payload.role !== undefined && !validRole(payload.role)) ||
+        if ((payload.name !== undefined && !validText(name, 200)) ||
+            (payload.role !== undefined && !validRole(payload.role)) ||
             (payload.department !== undefined && !validDepartment(payload.department)) ||
             (payload.isActive !== undefined && typeof payload.isActive !== "boolean") ||
             (payload.unpairDevice !== undefined && typeof payload.unpairDevice !== "boolean") ||
             (payload.phoneNumber !== undefined && !phoneNumber)) {
-          return json({ error: "Skontrolujte rolu, oddelenie, stav účtu a telefónne číslo." }, 400);
+          return json({ error: "Skontrolujte meno, rolu, oddelenie, stav účtu a telefónne číslo." }, 400);
         }
         const rows = await sql.query(
           `UPDATE app_users
-              SET role = COALESCE($2, role),
-                  department = CASE WHEN $3 THEN $4 ELSE department END,
-                  is_active = COALESCE($5, is_active),
-                  phone_number = CASE WHEN $6 THEN $7 ELSE phone_number END,
-                  device_id = CASE WHEN ($6 AND phone_number IS DISTINCT FROM $7) OR $8 THEN NULL ELSE device_id END,
-                  activated_at_utc = CASE WHEN ($6 AND phone_number IS DISTINCT FROM $7) OR $8 THEN NULL ELSE activated_at_utc END,
+              SET full_name = COALESCE($2, full_name),
+                  role = COALESCE($3, role),
+                  department = CASE WHEN $4 THEN $5 ELSE department END,
+                  is_active = COALESCE($6, is_active),
+                  phone_number = CASE WHEN $7 THEN $8 ELSE phone_number END,
+                  device_id = CASE WHEN ($7 AND phone_number IS DISTINCT FROM $8) OR $9 THEN NULL ELSE device_id END,
+                  activated_at_utc = CASE WHEN ($7 AND phone_number IS DISTINCT FROM $8) OR $9 THEN NULL ELSE activated_at_utc END,
                   updated_at_utc = now()
             WHERE id = $1::uuid
             RETURNING id, full_name, role, department, phone_number, is_active, device_id`,
           [
             userMatch[1],
+            name,
             payload.role ?? null,
             Object.prototype.hasOwnProperty.call(payload, "department"),
             typeof payload.department === "string" && payload.department.trim() ? payload.department.trim() : null,
