@@ -51,7 +51,7 @@ export const adminPage = String.raw`<!doctype html>
 
     <section id="dashboard" class="hidden">
       <section id="createCard" class="card">
-        <h2>Pridať používateľa</h2>
+        <h2>Pridať zamestnanca</h2>
         <form id="createForm">
           <div class="grid">
             <label>Meno a priezvisko<input id="name" required maxlength="200" placeholder="Ján Novák"></label>
@@ -59,7 +59,7 @@ export const adminPage = String.raw`<!doctype html>
             <label>Oddelenie<select id="department"></select></label>
             <label>Telefónne číslo<input id="phoneNumber" required inputmode="tel" maxlength="30" placeholder="0901 123 456"></label>
           </div>
-          <div class="actions"><button type="submit">Vytvoriť používateľa</button><button type="button" id="cancelCreate" class="secondary hidden">Zrušiť</button><button type="button" id="signOut" class="secondary">Odhlásiť administráciu</button></div>
+          <div class="actions"><button type="submit">Uložiť zamestnanca</button><button type="button" id="addAnother" class="secondary">Pridať ďalšieho zamestnanca</button><button type="button" id="cancelCreate" class="secondary hidden">Zrušiť</button><button type="button" id="signOut" class="secondary">Odhlásiť administráciu</button></div>
           <p id="formMessage" class="message"></p>
         </form>
       </section>
@@ -127,8 +127,9 @@ export const adminPage = String.raw`<!doctype html>
     byId("department").innerHTML = departmentOptions("");
     byId("unlock").addEventListener("click", openDashboard);
     byId("adminKey").addEventListener("keydown", (event) => { if (event.key === "Enter") openDashboard(); });
-    byId("createForm").addEventListener("submit", async (event) => { event.preventDefault(); try { await api("/admin-api/users", { method: "POST", body: JSON.stringify({ name: byId("name").value, role: byId("role").value, department: byId("department").value || null, phoneNumber: byId("phoneNumber").value }) }); event.target.reset(); setMessage("listMessage", "Používateľ bol vytvorený.", true); byId("createCard").classList.add("hidden"); await loadUsers(); } catch (error) { setMessage("formMessage", error.message, false); } });
+    byId("createForm").addEventListener("submit", async (event) => { event.preventDefault(); try { await api("/admin-api/users", { method: "POST", body: JSON.stringify({ name: byId("name").value, role: byId("role").value, department: byId("department").value || null, phoneNumber: byId("phoneNumber").value }) }); event.target.reset(); await loadUsers(); setMessage("formMessage", "Zamestnanec bol uložený. Môžete pridať ďalšieho.", true); byId("usersCard").scrollIntoView({ behavior: "smooth", block: "start" }); } catch (error) { setMessage("formMessage", error.message, false); } });
     byId("addEmployee").addEventListener("click", showCreateForm);
+    byId("addAnother").addEventListener("click", showCreateForm);
     byId("cancelCreate").addEventListener("click", () => byId("createCard").classList.add("hidden"));
     byId("signOut").addEventListener("click", () => { sessionStorage.removeItem(keyName); byId("dashboard").classList.add("hidden"); byId("lock").classList.remove("hidden"); byId("adminKey").value = ""; });
     if (key()) openDashboard();
