@@ -29,6 +29,8 @@ export const adminPage = String.raw`<!doctype html>
     button:hover { background: #155882; }
     button.secondary { background: #e9eff4; color: #243746; }
     button.secondary:hover { background: #d9e3ea; }
+    button.danger { background: #b33a3a; }
+    button.danger:hover { background: #902c2c; }
     .actions { display: flex; gap: 10px; align-items: center; margin-top: 16px; flex-wrap: wrap; }
     .message { min-height: 21px; margin: 12px 0 0; color: #a12929; }
     .message.ok { color: #187341; }
@@ -113,9 +115,9 @@ export const adminPage = String.raw`<!doctype html>
       currentUsers = users;
       const container = byId("users");
       if (!users.length) { container.innerHTML = "<p>Zatiaľ nie sú vytvorení žiadni používatelia.</p>"; return; }
-      container.innerHTML = users.map((user, index) => '<div class="user" data-id="' + user.id + '"><div><strong>' + (index + 1) + '. ' + escapeHtml(user.name) + '</strong><span class="badge ' + (user.isActive ? '' : 'inactive') + '">' + (user.isActive ? 'Aktívny účet' : 'Deaktivovaný účet') + '</span><span class="badge ' + (user.deviceLinked ? '' : 'inactive') + '">' + (user.deviceLinked ? 'Telefón pripojený' : 'Telefón nepripojený') + '</span></div><div><strong>Rola</strong><br>' + escapeHtml(roles[user.role] || user.role) + '</div><div><strong>Oddelenie</strong><br>' + escapeHtml(user.department || 'Bez oddelenia') + '</div><div><strong>Telefónne číslo</strong><br>' + escapeHtml(user.phoneNumber) + '</div><button class="edit-user">Zmeniť</button><button class="toggle-user secondary">' + (user.isActive ? 'Deaktivovať' : 'Aktivovať') + '</button>' + (user.deviceLinked ? '<button class="unpair-user secondary">Odpojiť telefón</button>' : '') + '</div>').join("");
+      container.innerHTML = users.map((user, index) => '<div class="user" data-id="' + user.id + '"><div><strong>' + (index + 1) + '. ' + escapeHtml(user.name) + '</strong><span class="badge ' + (user.isActive ? '' : 'inactive') + '">' + (user.isActive ? 'Aktívny účet' : 'Deaktivovaný účet') + '</span><span class="badge ' + (user.deviceLinked ? '' : 'inactive') + '">' + (user.deviceLinked ? 'Telefón pripojený' : 'Telefón nepripojený') + '</span></div><div><strong>Rola</strong><br>' + escapeHtml(roles[user.role] || user.role) + '</div><div><strong>Oddelenie</strong><br>' + escapeHtml(user.department || 'Bez oddelenia') + '</div><div><strong>Telefónne číslo</strong><br>' + escapeHtml(user.phoneNumber) + '</div><button class="edit-user">Zmeniť</button><button class="remove-user danger">Odstrániť</button>' + (user.deviceLinked ? '<button class="unpair-user secondary">Odpojiť telefón</button>' : '') + '</div>').join("");
       container.querySelectorAll(".edit-user").forEach((button) => button.addEventListener("click", () => openEditForm(button.closest(".user").dataset.id)));
-      container.querySelectorAll(".toggle-user").forEach((button) => button.addEventListener("click", () => toggleUser(button.closest(".user"), button.textContent === "Aktivovať")));
+      container.querySelectorAll(".remove-user").forEach((button) => button.addEventListener("click", () => removeUser(button.closest(".user"))));
       container.querySelectorAll(".unpair-user").forEach((button) => button.addEventListener("click", () => unpairDevice(button.closest(".user"))));
     }
     function openEditForm(id) {
@@ -130,8 +132,10 @@ export const adminPage = String.raw`<!doctype html>
       byId("editModal").classList.remove("hidden");
       byId("editName").focus();
     }
-    async function toggleUser(row, isActive) {
-      try { await api("/admin-api/users/" + row.dataset.id, { method: "PATCH", body: JSON.stringify({ isActive }) }); setMessage("listMessage", "Stav účtu bol zmenený.", true); await loadUsers(); }
+    async function removeUser(row) {
+      const name = row.querySelector("strong").textContent.replace(/^\d+\.\s*/, "");
+      if (!confirm('Naozaj chcete odstrániť používateľa „' + name + '“?')) return;
+      try { await api("/admin-api/users/" + row.dataset.id, { method: "DELETE" }); setMessage("listMessage", "Používateľ bol odstránený.", true); await loadUsers(); }
       catch (error) { setMessage("listMessage", error.message, false); }
     }
     async function unpairDevice(row) {

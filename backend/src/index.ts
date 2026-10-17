@@ -208,6 +208,15 @@ export default {
       }
 
       const userMatch = url.pathname.match(/^\/admin-api\/users\/([0-9a-f-]{36})$/i);
+      if (request.method === "DELETE" && userMatch) {
+        const rows = await sql.query(
+          "DELETE FROM app_users WHERE id = $1::uuid RETURNING id",
+          [userMatch[1]],
+        );
+        if (rows.length === 0) return json({ error: "Používateľ nebol nájdený." }, 404);
+        return json({ id: rows[0].id });
+      }
+
       if (request.method === "PATCH" && userMatch) {
         let payload: Record<string, unknown>;
         try {
