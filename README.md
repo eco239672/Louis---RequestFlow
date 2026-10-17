@@ -65,4 +65,4 @@ Do not store cloud access keys, administrator keys, or phone lists in the reposi
 - push notifications for a manager when a new request needs a decision and for an employee when it is approved or rejected;
 - authenticated sign-in and account recovery for larger deployments;
 - audit log for administrator changes;
-- update the SQLite native dependency when a compatible security update is available.
+- routine dependency and security updates.
