@@ -11,6 +11,7 @@ export const adminStyles = String.raw`
   input, select, button { font: inherit; } input, select { width: 100%; padding: 10px 11px; border: 1px solid #b8c6d2; border-radius: 8px; background: white; }
   button, .button { border: 0; border-radius: 8px; padding: 10px 14px; cursor: pointer; font-weight: 650; background: #1d6fa5; color: white; text-decoration: none; display: inline-block; }
   button:hover, .button:hover { background: #155882; } button.secondary, .button.secondary { background: #e9eff4; color: #243746; } button.secondary:hover, .button.secondary:hover { background: #d9e3ea; }
+  #addEmployee, .user-card .button { width: 222px; }
   button.danger { background: #b33a3a; } button.danger:hover { background: #902c2c; } .actions { display: flex; gap: 10px; align-items: center; margin-top: 16px; flex-wrap: wrap; }
   .message { min-height: 21px; margin: 12px 0 0; color: #a12929; } .message.ok { color: #187341; }
   .user-card { display: grid; grid-template-columns: 250px repeat(4, minmax(115px, 150px)) minmax(160px, 1fr); gap: 12px; align-items: center; padding: 16px 0; border-top: 1px solid #e2e8ee; }
