@@ -36,9 +36,9 @@ The separate **Louis – RequestFlow** cloud backend runs on Neon in the EU regi
 
 ## User and phone administration
 
-The cloud includes an administrator interface at `/admin`. The administrator creates a user record with the employee's full name, role, department, and phone number, in that order. Roles are Employee, Manager, and Administrator.
+The cloud includes an administrator interface at `/admin`. The administrator creates a user record with the employee's full name, role, department, phone number, and optional email address. Roles are Employee, Manager, and Administrator.
 
-Each employee is shown on the main administrator page and has a separate editable card. The administrator can update the employee's details or permanently remove the employee record. Removing an employee also removes their device authorization; previously created requests remain in the system as workflow history.
+Each employee is shown on the main administrator page and has a separate editable card. The administrator can update the employee's details, including their optional email address, or permanently remove the employee record. Removing an employee also removes their device authorization; previously created requests remain in the system as workflow history.
 
 When a person first opens the mobile app, they enter their phone number. The cloud matches that number with the administrator-created user record, links the device to that person, and loads the assigned role and department. The phone cannot grant itself manager permissions.
 

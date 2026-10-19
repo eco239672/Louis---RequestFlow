@@ -24,6 +24,7 @@ type UserRole = "employee" | "manager" | "administrator";
 type AppUser = {
   id: string;
   name: string;
+  email: string | null;
   role: UserRole;
   department: string | null;
   phoneNumber: string;
@@ -91,10 +92,20 @@ function normalizePhoneNumber(value: unknown): string | null {
   return digits.length >= 8 && digits.length <= 15 ? normalized : null;
 }
 
+function normalizeEmail(value: unknown): string | null | undefined {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== "string") return undefined;
+
+  const email = value.trim().toLowerCase();
+  if (!email) return null;
+  return email.length <= 320 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : undefined;
+}
+
 function toAppUser(row: Record<string, unknown>): AppUser {
   return {
     id: String(row.id),
     name: String(row.full_name),
+    email: row.email ? String(row.email) : null,
     role: String(row.role) as UserRole,
     department: row.department ? String(row.department) : null,
     phoneNumber: String(row.phone_number),
@@ -108,7 +119,7 @@ async function userForDevice(request: Request): Promise<AppUser | null> {
   if (!validDeviceId(deviceId)) return null;
 
   const rows = await sql.query(
-    `SELECT id, full_name, role, department, phone_number, is_active, device_id
+    `SELECT id, full_name, email, role, department, phone_number, is_active, device_id
        FROM app_users
       WHERE device_id = $1 AND is_active = true`,
     [deviceId],
@@ -182,7 +193,7 @@ export default {
 
       if (request.method === "GET" && url.pathname === "/admin-api/users") {
         const rows = await sql.query(
-          `SELECT id, full_name, role, department, phone_number, is_active, device_id
+          `SELECT id, full_name, email, role, department, phone_number, is_active, device_id
              FROM app_users
             ORDER BY created_at_utc ASC, phone_number ASC`,
         );
@@ -197,15 +208,17 @@ export default {
           return json({ error: "Neplatné údaje používateľa." }, 400);
         }
         const phoneNumber = normalizePhoneNumber(payload.phoneNumber);
-        if (!validText(payload.name, 200) || !validRole(payload.role) || !validDepartment(payload.department) || !phoneNumber) {
-          return json({ error: "Skontrolujte meno, rolu, oddelenie a telefónne číslo." }, 400);
+        const email = normalizeEmail(payload.email);
+        if (!validText(payload.name, 200) || !validRole(payload.role) || !validDepartment(payload.department) || !phoneNumber || email === undefined) {
+          return json({ error: "Skontrolujte meno, rolu, oddelenie, telefónne číslo a e-mail." }, 400);
         }
         const rows = await sql.query(
           `INSERT INTO app_users (full_name, email, role, department, phone_number)
-           VALUES ($1, NULL, $2, $3, $4)
-           RETURNING id, full_name, role, department, phone_number, is_active, device_id`,
+           VALUES ($1, $2, $3, $4, $5)
+           RETURNING id, full_name, email, role, department, phone_number, is_active, device_id`,
           [
             payload.name.trim(),
+            email,
             payload.role,
             typeof payload.department === "string" && payload.department.trim() ? payload.department.trim() : null,
             phoneNumber,
@@ -217,7 +230,7 @@ export default {
       const userMatch = url.pathname.match(/^\/admin-api\/users\/([0-9a-f-]{36})$/i);
       if (request.method === "GET" && userMatch) {
         const rows = await sql.query(
-          `SELECT id, full_name, role, department, phone_number, is_active, device_id
+          `SELECT id, full_name, email, role, department, phone_number, is_active, device_id
              FROM app_users WHERE id = $1::uuid`,
           [userMatch[1]],
         );
@@ -241,30 +254,35 @@ export default {
           return json({ error: "Neplatné údaje používateľa." }, 400);
         }
         const name = payload.name === undefined ? null : typeof payload.name === "string" ? payload.name.trim() : null;
+        const email = payload.email === undefined ? undefined : normalizeEmail(payload.email);
         const phoneNumber = payload.phoneNumber === undefined ? null : normalizePhoneNumber(payload.phoneNumber);
         if ((payload.name !== undefined && !validText(name, 200)) ||
+            (payload.email !== undefined && email === undefined) ||
             (payload.role !== undefined && !validRole(payload.role)) ||
             (payload.department !== undefined && !validDepartment(payload.department)) ||
             (payload.isActive !== undefined && typeof payload.isActive !== "boolean") ||
             (payload.unpairDevice !== undefined && typeof payload.unpairDevice !== "boolean") ||
             (payload.phoneNumber !== undefined && !phoneNumber)) {
-          return json({ error: "Skontrolujte meno, rolu, oddelenie, stav účtu a telefónne číslo." }, 400);
+          return json({ error: "Skontrolujte meno, e-mail, rolu, oddelenie, stav účtu a telefónne číslo." }, 400);
         }
         const rows = await sql.query(
           `UPDATE app_users
               SET full_name = COALESCE($2, full_name),
-                  role = COALESCE($3, role),
-                  department = CASE WHEN $4 THEN $5 ELSE department END,
-                  is_active = COALESCE($6, is_active),
-                  phone_number = CASE WHEN $7 THEN $8 ELSE phone_number END,
-                  device_id = CASE WHEN ($7 AND phone_number IS DISTINCT FROM $8) OR $9 THEN NULL ELSE device_id END,
-                  activated_at_utc = CASE WHEN ($7 AND phone_number IS DISTINCT FROM $8) OR $9 THEN NULL ELSE activated_at_utc END,
+                  email = CASE WHEN $3 THEN $4 ELSE email END,
+                  role = COALESCE($5, role),
+                  department = CASE WHEN $6 THEN $7 ELSE department END,
+                  is_active = COALESCE($8, is_active),
+                  phone_number = CASE WHEN $9 THEN $10 ELSE phone_number END,
+                  device_id = CASE WHEN ($9 AND phone_number IS DISTINCT FROM $10) OR $11 THEN NULL ELSE device_id END,
+                  activated_at_utc = CASE WHEN ($9 AND phone_number IS DISTINCT FROM $10) OR $11 THEN NULL ELSE activated_at_utc END,
                   updated_at_utc = now()
             WHERE id = $1::uuid
-            RETURNING id, full_name, role, department, phone_number, is_active, device_id`,
+            RETURNING id, full_name, email, role, department, phone_number, is_active, device_id`,
           [
             userMatch[1],
             name,
+            Object.prototype.hasOwnProperty.call(payload, "email"),
+            email ?? null,
             payload.role ?? null,
             Object.prototype.hasOwnProperty.call(payload, "department"),
             typeof payload.department === "string" && payload.department.trim() ? payload.department.trim() : null,
