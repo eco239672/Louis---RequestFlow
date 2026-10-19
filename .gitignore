@@ -14,5 +14,9 @@ phone-*.png
 phone-*.xml
 emulator-*.log
 
+# Local administrator credentials and temporary Office files
+admin/
+~$*.pptx
+
 # Local Android Studio profile
 .android-studio-fresh/
