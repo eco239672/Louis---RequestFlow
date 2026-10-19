@@ -13,7 +13,8 @@ export const adminStyles = String.raw`
   button:hover, .button:hover { background: #155882; } button.secondary, .button.secondary { background: #e9eff4; color: #243746; } button.secondary:hover, .button.secondary:hover { background: #d9e3ea; }
   #addEmployee, .user-card .button { width: 222px; }
   button.danger { background: #b33a3a; } button.danger:hover { background: #902c2c; } .actions { display: flex; gap: 10px; align-items: center; margin-top: 16px; flex-wrap: wrap; }
-  #editForm .actions > button, #editForm .actions > .button { height: 42px; display: inline-flex; align-items: center; justify-content: center; }
+  #editForm .actions > button, #editForm .actions > .button { box-sizing: border-box; height: 42px; min-height: 42px; max-height: 42px; padding: 0 14px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+  #editForm .actions > button[type="submit"] { background: #187341; } #editForm .actions > button[type="submit"]:hover { background: #125a32; } #editForm .actions > .button.secondary { background: #d97706; color: white; } #editForm .actions > .button.secondary:hover { background: #b45309; }
   .message { min-height: 21px; margin: 12px 0 0; color: #a12929; } .message.ok { color: #187341; }
   .user-card { display: grid; grid-template-columns: 250px repeat(4, minmax(115px, 150px)) minmax(160px, 1fr); gap: 12px; align-items: center; background: white; border: 1px solid #dbe3ea; border-radius: 14px; box-shadow: 0 2px 10px #173a5e12; padding: 16px 20px; margin-bottom: 14px; }
   .detail { color: #425466; text-align: center; } .badge { display: inline-block; font-size: 12px; margin: 6px 4px 0 0; padding: 3px 7px; border-radius: 99px; background: #e6f3eb; color: #1e6a3b; }
