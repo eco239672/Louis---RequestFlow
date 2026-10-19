@@ -5,6 +5,7 @@ export const adminStyles = String.raw`
   header div, main { max-width: 1360px; margin: auto; } h1 { margin: 0; font-size: clamp(24px, 4vw, 34px); }
   header p { margin: 7px 0 0; color: #d9e9f7; } main { padding: 22px 18px 48px; }
   .card { background: white; border: 1px solid #dbe3ea; border-radius: 14px; box-shadow: 0 2px 10px #173a5e12; padding: 20px; margin-bottom: 18px; }
+  .employee-list { padding-top: 8px; padding-bottom: 8px; } .employee-list .message { min-height: 0; margin: 0; } .employee-list .message:not(:empty) { min-height: 21px; margin: 0 0 12px; }
   .hidden { display: none !important; } h2 { margin: 0 0 14px; font-size: 21px; } h3 { margin: 0; font-size: 18px; }
   .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; } label { display: grid; gap: 6px; font-weight: 600; font-size: 14px; }
   input, select, button { font: inherit; } input, select { width: 100%; padding: 10px 11px; border: 1px solid #b8c6d2; border-radius: 8px; background: white; }
