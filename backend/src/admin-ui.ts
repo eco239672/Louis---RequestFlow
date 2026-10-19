@@ -12,8 +12,9 @@ export const adminStyles = String.raw`
   button:hover, .button:hover { background: #155882; } button.secondary, .button.secondary { background: #e9eff4; color: #243746; } button.secondary:hover, .button.secondary:hover { background: #d9e3ea; }
   button.danger { background: #b33a3a; } button.danger:hover { background: #902c2c; } .actions { display: flex; gap: 10px; align-items: center; margin-top: 16px; flex-wrap: wrap; }
   .message { min-height: 21px; margin: 12px 0 0; color: #a12929; } .message.ok { color: #187341; }
-  .user-card { display: grid; grid-template-columns: minmax(180px, 1.1fr) repeat(3, minmax(120px, .7fr)) auto; gap: 12px; align-items: center; padding: 16px 0; border-top: 1px solid #e2e8ee; }
+  .user-card { display: grid; grid-template-columns: minmax(180px, 1.1fr) repeat(4, minmax(120px, .7fr)) auto; gap: 12px; align-items: center; padding: 16px 0; border-top: 1px solid #e2e8ee; }
   .user-card:first-of-type { border-top: 0; } .detail { color: #425466; } .badge { display: inline-block; font-size: 12px; margin: 6px 4px 0 0; padding: 3px 7px; border-radius: 99px; background: #e6f3eb; color: #1e6a3b; }
+  .user-card .button { display: inline-flex; align-items: center; justify-content: center; text-align: center; }
   .badge.inactive { background: #f6e8e8; color: #963636; } .modal { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; overflow-y: auto; padding: 18px; background: #17212b99; } .modal .card { width: min(760px, 100%); margin: auto; }
   #lock { max-width: 480px; margin: 48px auto; } @media (max-width: 700px) { .grid, .user-card { grid-template-columns: 1fr; } .user-card .button { width: 100%; text-align: center; } }
 `;
